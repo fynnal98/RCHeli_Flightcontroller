@@ -3,39 +3,38 @@
 #include "MPU6050.h"
 #include "PID.h"
 #include "FBL.h"
+#include "WDT.h"  // Füge die Watchdog-Headerdatei hinzu
 
-// Konfiguriere deinen SBUS-Empfänger auf dem entsprechenden Pin
-const int sbusPin = 16;  // Pin für SBUS
-SBUSReceiver sbusReceiver(Serial2);  // Verwende Serial2 für SBUS
+const int sbusPin = 16;
+SBUSReceiver sbusReceiver(Serial2);
 
 MPU6050 mpu;
-PID pidRoll(2.0, 0.0, 0.1);
-PID pidPitch(2.0, 0.0, 0.1);
-FBL fbl(13, 14, 15, 40.0);
+PID pidRoll(3.0, 0.0, 0.2);
+PID pidPitch(3.0, 0.0, 0.2);
+FBL fbl(13, 14, 15, 30.0);
 
 void setup() {
     Serial.begin(115200);
-    sbusReceiver.begin();
 
+    initWatchdog(2);  // Initialisiere den Watchdog-Timer mit einem Timeout von 3 Sekunden
+
+    sbusReceiver.begin();
     Wire.begin(21, 22);
     mpu.begin();
     mpu.setup();
     fbl.setup();
+
+    Serial.println("Setup abgeschlossen");
 }
 
 void loop() {
     unsigned long channel1Pulse, channel2Pulse, channel6Pulse;
 
-    // SBUS-Daten einlesen und debuggen
-    if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel6Pulse)) {
-        // Debug-Ausgaben für die empfangenen Kanäle
-        Serial.print("Channel 1: "); Serial.println(channel1Pulse);
-        Serial.print("Channel 2: "); Serial.println(channel2Pulse);
-        Serial.print("Channel 6: "); Serial.println(channel6Pulse);
+    resetWatchdog();  // Setze den Watchdog-Timer zurück
 
-        // Verarbeite die Kanäle und steuere die Servos
+    if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel6Pulse)) {
         fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
     }
 
-    delay(20);  // Kurze Pause, um das System zu stabilisieren
+    delay(20);
 }
