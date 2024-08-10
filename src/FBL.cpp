@@ -23,25 +23,6 @@ void FBL::update(MPU6050& mpu, PID& pidRoll, PID& pidPitch, unsigned long channe
     unsigned long servo2Pulse = channel6Pulse + (-0.5 * pitchCorrection + 0.866 * rollCorrection); // Left
     unsigned long servo3Pulse = channel1Pulse - (-0.5 * pitchCorrection - 0.866 * rollCorrection); // Right
 
-    // Gebe die Pulslängen im Serial Monitor aus (optional)
-    Serial.print("Channel 1 Pulse: ");
-    Serial.print(channel1Pulse);
-    Serial.print(" us\t");
-    Serial.print("Roll Correction: ");
-    Serial.print(rollCorrection);
-    Serial.print(" us\t");
-
-    Serial.print("Channel 2 Pulse: ");
-    Serial.print(channel2Pulse);
-    Serial.print(" us\t");
-    Serial.print("Pitch Correction: ");
-    Serial.print(pitchCorrection);
-    Serial.print(" us\t");
-
-    Serial.print("Channel 6 Pulse: ");
-    Serial.print(channel6Pulse);
-    Serial.println(" us");
-
     // Setze die Pulslängen an die Servos
     servo1.writeMicroseconds(servo1Pulse); // Back
     servo2.writeMicroseconds(servo2Pulse); // Left
