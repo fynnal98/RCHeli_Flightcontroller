@@ -1,5 +1,1 @@
-A Flightcontroller for RC Helicopter based on a ESP32
-
-components that are needed: 
-esp32 
-mpu6050
+A Flightcontroller for RC Helicopter based on a ESP32 and MPU6050
