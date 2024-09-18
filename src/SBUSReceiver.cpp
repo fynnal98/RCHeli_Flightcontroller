@@ -16,12 +16,12 @@ bool SBUSReceiver::readChannels(unsigned long& channel1, unsigned long& channel2
         // Mappe die SBUS-Kanalwerte zu Servo-Pulsweiten (1000-2000 us)
         channel1 = map(data.ch[0], 172, 1811, 1000, 2000);
         channel2 = map(data.ch[1], 172, 1811, 1000, 2000);
-        channel4 = map(data.ch[3], 172, 1811, 1000, 2000); // Channel 4
+        channel4 = map(data.ch[3], 172, 1811, 1000, 2000); 
         channel6 = map(data.ch[5], 172, 1811, 1000, 2000);
         channel8 = map(data.ch[7], 172, 1811, 1000, 2000);
 
         return true;
     }
-    Serial.println("SBUS-Daten konnten nicht gelesen werden.");
+    // Serial.println("SBUS-Daten konnten nicht gelesen werden.");
     return false;
 }

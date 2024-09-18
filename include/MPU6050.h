@@ -2,8 +2,9 @@
 #define MPU6050_H
 
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
 #include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Arduino.h>
 
 class MPU6050 {
 public:

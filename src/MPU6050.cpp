@@ -20,4 +20,11 @@ void MPU6050::setup() {
 
 void MPU6050::getEvent(sensors_event_t* a, sensors_event_t* g, sensors_event_t* temp) {
     mpu.getEvent(a, g, temp);
+    
+
+    // Serial.print(a->acceleration.x); Serial.print(",");
+    // Serial.print(a->acceleration.y); Serial.print(",");
+    // Serial.print(a->acceleration.z); Serial.print(",");
+    // Serial.print(g->gyro.x); Serial.print(",");
+    // Serial.print(g->gyro.y); Serial.println(g->gyro.z); 
 }
