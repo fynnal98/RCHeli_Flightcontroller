@@ -5,15 +5,18 @@
 #include "PID.h"
 #include "FBL.h"
 #include "WDT.h"
-#include "TailRotor.h"  // Neue Datei einbinden
+#include "TailRotor.h"
 
 const int sbusPin = 16;
 SBUSReceiver sbusReceiver(Serial2);
 
 MPU6050 mpu;
-PID pidRoll(90.0, 0.0, 80);
-PID pidPitch(90.0, 0.0, 80);
-FBL fbl(13, 14, 15, 0.0, -0.09, 0.0);  // Pins und Offsets für dx, dy, dz
+PID pidRoll(90.0, 0.0, 1);
+PID pidPitch(90.0, 0.0, 1);
+
+float alpha = 0.15;  // Alpha-Wert für den Tiefpassfilter
+
+FBL fbl(13, 14, 15, 0.0, -0.09, 0.0, alpha);  // Pins, Offsets und Alpha
 
 // Konfiguration für den Hauptmotor und den Heckrotor
 const int mainMotorPin = 5;   // Pin für den ESC des Hauptmotors
@@ -37,7 +40,7 @@ void setup() {
     // Attache den Servo (Motor) an den Pin
     mainMotorServo.attach(mainMotorPin);
 
-    // Serial.println("Setup abgeschlossen");
+    Serial.println("Setup abgeschlossen");
 }
 
 void loop() {
@@ -51,13 +54,14 @@ void loop() {
         // Direkte Ausgabe des PWM-Werts auf Pin 5 für den Hauptmotor
         mainMotorServo.writeMicroseconds(channel8Pulse);
 
+        // MPU-Daten auslesen und an FBL übergeben
+        fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
+
         // Update für den Heckrotor
         tailRotor.update(channel8Pulse, channel4Pulse);  // TailRotor übernimmt jetzt die Berechnung für den Heckrotor
 
-        // Aktualisiert die Flugsteuerung mit den restlichen Kanälen
-        fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
     } else {
-        // Serial.println("Fehler beim Lesen der Kanäle.");
+        Serial.println("Fehler beim Lesen der Kanäle.");
     }
 
     delay(10);  // Verzögert die Ausgabe
