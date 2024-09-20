@@ -1,4 +1,7 @@
 #include "FBL.h"
+#include "DataLogger.h"
+
+DataLogger dataLogger;
 
 FBL::FBL(int pin1, int pin2, int pin3, float offsetX, float offsetY, float offsetZ, float alpha)
     : servo1Pin(pin1), servo2Pin(pin2), servo3Pin(pin3), dx(offsetX), dy(offsetY), dz(offsetZ),
@@ -21,7 +24,7 @@ void FBL::update(MPU6050& mpu, PID& pidRoll, PID& pidPitch, unsigned long channe
     float ax_corrected = a.acceleration.x - (g.gyro.y * dz - g.gyro.z * dy);
     float ay_corrected = a.acceleration.y - (g.gyro.z * dx - g.gyro.x * dz);
 
-    // Filter anwenden
+    // Tiefpassfilter anwenden
     float rollFiltered = rollFilter.apply(ax_corrected);
     float pitchFiltered = pitchFilter.apply(ay_corrected);
 
