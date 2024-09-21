@@ -13,8 +13,9 @@ public:
     void setup();
     void update(MPU6050& mpu, PID& pidRoll, PID& pidPitch, unsigned long channel1Pulse, unsigned long channel2Pulse, unsigned long channel6Pulse);
 
+    Servo servo1, servo2, servo3;  // Servos öffentlich machen, damit sie im direkten Modus genutzt werden können
+
 private:
-    Servo servo1, servo2, servo3;
     int servo1Pin, servo2Pin, servo3Pin;
     float dx, dy, dz;  // Offsets für den Sensor
 
