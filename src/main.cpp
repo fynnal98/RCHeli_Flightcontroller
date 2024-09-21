@@ -6,7 +6,7 @@
 #include "FBL.h"
 #include "WDT.h"
 #include "TailRotor.h"
-#include "NotchFilter.h"  // Für den Bandsperrfilter
+#include "NotchFilter.h"  
 
 const int sbusPin = 16;
 SBUSReceiver sbusReceiver(Serial2);
