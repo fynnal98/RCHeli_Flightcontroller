@@ -55,26 +55,40 @@ void setup() {
 }
 
 void loop() {
-    unsigned long channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse;
+    unsigned long channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse;
 
     resetWatchdog();  // Setzt den Watchdog-Timer zurück
 
     // Liest die Werte der Kanäle 1, 2, 4, 6 und 8
     if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse)) {
+        // Kanal 10 als Schalter für das FBL-System und andere Filter verwenden
+        channel10Pulse = sbusReceiver.getChannel10Pulse();  // Verwende die neue Methode
 
-        // Direkte Ausgabe des PWM-Werts auf Pin 5 für den Hauptmotor
+        if (channel10Pulse > 1500) {
+            // FBL-System und Filter aktiv
+            sensors_event_t a, g, temp;
+            mpu.getEvent(&a, &g, &temp);  // Daten vom MPU6050 auslesen
+
+            // FBL-Update mit den gefilterten Werten durchführen
+            fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
+
+            // Heckrotor aktualisieren
+            tailRotor.update(channel8Pulse, channel4Pulse);
+        } else {
+            // FBL und Filter deaktiviert – direkte Steuerdaten an die Servos weitergeben
+            fbl.servo1.writeMicroseconds(channel2Pulse);  // Back
+            fbl.servo2.writeMicroseconds(channel6Pulse);  // Left
+            fbl.servo3.writeMicroseconds(channel1Pulse);  // Right
+
+            // Heckrotor direkt mit Kanal 8 und 4 steuern
+            tailRotor.update(channel8Pulse, channel4Pulse);
+        }
+
+        // Hauptmotor steuern
         mainMotorServo.writeMicroseconds(channel8Pulse);
-
-        // MPU-Daten auslesen und über die serielle Schnittstelle senden
-        sensors_event_t a, g, temp;
-        mpu.getEvent(&a, &g, &temp);  // Daten werden automatisch über den DataLogger gesendet
-
-        // FBL-Update und Heckrotor-Steuerung
-        fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
-        tailRotor.update(channel8Pulse, channel4Pulse);  // TailRotor übernimmt jetzt die Berechnung für den Heckrotor
     } else {
         Serial.println("Fehler beim Lesen der Kanäle.");
     }
 
-    delay(10);  // Verzögert die Ausgabe
+    delay(10);  // Verzögert die Ausgabe, um Stabilität zu gewährleisten
 }
