@@ -6,7 +6,6 @@
 #include "FBL.h"
 #include "WDT.h"
 #include "TailRotor.h"
-#include "NotchFilter.h"  
 
 const int sbusPin = 16;
 SBUSReceiver sbusReceiver(Serial2);
@@ -18,10 +17,6 @@ PID pidPitch(90.0, 0.1, 10);
 // Tiefpassfilter-Parameter
 float alpha = 0.15;  // Alpha-Wert für den Tiefpassfilter
 
-// Bandsperrfilter-Parameter
-float notchFreq = 0.0;  // Notch-Frequenz in Hz
-float bandwidth = 0.0;  // Bandbreite des Notch-Filters in Hz
-float sampleRate = 500.0;  // Abtastrate in Hz
 
 // Flightcontroller Setup
 FBL fbl(13, 14, 15, 0.0, -0.09, 0.0, alpha);  // Pins, Offsets und Alpha
@@ -31,10 +26,6 @@ const int tailMotorPin = 17;  // Pin für den ESC des Heckmotors
 
 Servo mainMotorServo;  // Servo-Objekt für den Hauptmotor
 TailRotor tailRotor(tailMotorPin, 1);
-
-// Initialisiere den Bandsperrfilter
-NotchFilter notchFilterX(sampleRate, notchFreq, bandwidth);
-NotchFilter notchFilterY(sampleRate, notchFreq, bandwidth);
 
 void setup() {
     Serial.begin(115200);  // Startet die serielle Kommunikation
