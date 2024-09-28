@@ -7,7 +7,7 @@ void SBUSReceiver::begin() {
     sbus_rx.Begin();
 }
 
-bool SBUSReceiver::readChannels(unsigned long& channel1, unsigned long& channel2, unsigned long& channel4, unsigned long& channel6, unsigned long& channel8) {
+bool SBUSReceiver::readChannels(unsigned int& channel1, unsigned int& channel2, unsigned int& channel4, unsigned int& channel6, unsigned int& channel8, unsigned int& channel10) {
     if (sbus_rx.Read()) {
         data = sbus_rx.data();
 
@@ -17,13 +17,9 @@ bool SBUSReceiver::readChannels(unsigned long& channel1, unsigned long& channel2
         channel4 = map(data.ch[3], 172, 1811, 1000, 2000); 
         channel6 = map(data.ch[5], 172, 1811, 1000, 2000);
         channel8 = map(data.ch[7], 172, 1811, 1000, 2000);
+        channel10 = map(data.ch[9], 172, 1811, 1000, 2000);
 
         return true;
     }
     return false;
-}
-
-// Neue Methode zur Rückgabe des Werts von Kanal 10
-unsigned long SBUSReceiver::getChannel10Pulse() {
-    return map(data.ch[9], 172, 1811, 1000, 2000);
 }

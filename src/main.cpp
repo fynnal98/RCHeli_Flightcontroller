@@ -56,14 +56,12 @@ void setup() {
 }
 
 void loop() {
-    unsigned long channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse;
+    unsigned int channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse;
 
     resetWatchdog();  // Setzt den Watchdog-Timer zurück
 
     // Liest die Werte der Kanäle 1, 2, 4, 6 und 8
-    if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse)) {
-        // Kanal 10 als Schalter für das FBL-System und andere Filter verwenden
-        channel10Pulse = sbusReceiver.getChannel10Pulse();  // Verwende die neue Methode
+    if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse)) {
 
         if (channel10Pulse > 1500) {
             // FBL-System und Filter aktiv

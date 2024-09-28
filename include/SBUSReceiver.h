@@ -8,10 +8,10 @@ class SBUSReceiver {
 public:
     SBUSReceiver(HardwareSerial& serialPort);
     void begin();
-    bool readChannels(unsigned long& channel1, unsigned long& channel2, unsigned long& channel4, unsigned long& channel6, unsigned long& channel8);
+    bool readChannels(unsigned int& channel1, unsigned int& channel2, unsigned int& channel4, unsigned int& channel6, unsigned int& channel8, unsigned int& channel10);
     
     // Neue Methode zum Abrufen des Werts von Kanal 10
-    unsigned long getChannel10Pulse();
+    unsigned int getChannel10Pulse();
 
 private:
     bfs::SbusRx sbus_rx;
