@@ -21,9 +21,9 @@ PID pidPitch(90.0, 0.1, 10);
 PID pidYaw(0.0, 0.0, 0);  
 
 // Filterparameter
-float lowPassAlpha = 0.5;  // Low-pass filter alpha
+float lowPassAlpha = 1;  // Low-pass filter alpha
 float highPassAlpha = 1.0;  // High-pass filter alpha
-int movingAvgWindowSize = 5;  // Moving average filter window size (N)
+int movingAvgWindowSize = 1;  // Moving average filter window size (N)
 
 // CG-Offsets für den MPU vom CG des Helikopters
 float cgOffsetX = 0.0;  // X-Offset (Seitliche Verschiebung)
@@ -120,5 +120,5 @@ void loop() {
         Serial.println("Fehler beim Lesen der Kanäle.");
     }
 
-    delay(20);
+    delay(10);
 }
