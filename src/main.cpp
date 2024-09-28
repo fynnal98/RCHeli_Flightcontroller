@@ -86,5 +86,5 @@ void loop() {
         Serial.println("Fehler beim Lesen der Kanäle.");
     }
 
-    delay(10);  // Verzögert die Ausgabe, um Stabilität zu gewährleisten
+    delay(10);
 }
