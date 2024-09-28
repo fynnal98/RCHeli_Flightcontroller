@@ -5,6 +5,7 @@
 #include "PID.h"
 #include "FBL.h"
 #include "WDT.h"
+#include "MainMotor.h"
 #include "TailRotor.h"
 
 const int sbusPin = 16;
@@ -31,8 +32,10 @@ FBL fbl(pinServo1, pinServo2, pinServo3, offsetGyroX, offsetGyroY, offsetGyroZ, 
 const int mainMotorPin = 5;   // Pin für den ESC des Hauptmotors
 const int tailMotorPin = 17;  // Pin für den ESC des Heckmotors
 
-Servo mainMotorServo;  // Servo-Objekt für den Hauptmotor
-TailRotor tailRotor(tailMotorPin, 1);
+MainMotor mainMotorServo(mainMotorPin);  // Servo-Objekt für den Hauptmotor
+float scalingFactorTailRotor = 1;
+
+TailRotor tailRotor(tailMotorPin, scalingFactorTailRotor);
 
 void setup() {
     Serial.begin(115200);  // Startet die serielle Kommunikation
@@ -47,7 +50,7 @@ void setup() {
     tailRotor.setup();  // Setup für den Heckrotor
 
     // Attache den Servo (Motor) an den Pin
-    mainMotorServo.attach(mainMotorPin);
+    mainMotorServo.setup();
 
     Serial.println("Setup abgeschlossen");
 }
@@ -83,7 +86,7 @@ void loop() {
         }
 
         // Hauptmotor steuern
-        mainMotorServo.writeMicroseconds(channel8Pulse);
+        mainMotorServo.setPulse(channel8Pulse);
     } else {
         Serial.println("Fehler beim Lesen der Kanäle.");
     }
