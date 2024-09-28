@@ -17,8 +17,10 @@ PID pidRoll(90.0, 0.1, 10);
 PID pidPitch(90.0, 0.1, 10);
 PID pidYaw(0.0, 0.0, 0);  
 
-// Tiefpassfilter-Parameter
-float alpha = 0.15;  // Alpha-Wert für den Tiefpassfilter
+// Filter parameters
+float lowPassAlpha = 0.5;  // Low-pass filter alpha
+float highPassAlpha = 1;  // High-pass filter alpha
+int movingAvgWindowSize = 5;  // Moving average filter window size (N)
 
 int pinServo1 = 13;
 int pinServo2 = 14;
@@ -28,66 +30,68 @@ float offsetGyroX = 0.0;
 float offsetGyroY = -0.09;
 float offsetGyroZ = 0.0;
 
-// Flightcontroller Setup
-FBL fbl(pinServo1, pinServo2, pinServo3, offsetGyroX, offsetGyroY, offsetGyroZ, alpha);  // Pins, Offsets und Alpha
+// Flight controller setup
+FBL fbl(pinServo1, pinServo2, pinServo3, offsetGyroX, offsetGyroY, offsetGyroZ, lowPassAlpha, highPassAlpha, movingAvgWindowSize);  // Includes moving average filter size
 
-const int mainMotorPin = 5;   // Pin für den ESC des Hauptmotors
-const int tailMotorPin = 17;  // Pin für den ESC des Heckmotors
+const int mainMotorPin = 5;   // Pin for the ESC of the main motor
+const int tailMotorPin = 17;  // Pin for the ESC of the tail motor
 
-MainMotor mainMotorServo(mainMotorPin);  // Servo-Objekt für den Hauptmotor
+MainMotor mainMotorServo(mainMotorPin);  // Main motor servo object
 float scalingFactorTailRotor = 1;
 
 TailRotor tailRotor(tailMotorPin, scalingFactorTailRotor);
 
 void setup() {
-    Serial.begin(115200);  // Startet die serielle Kommunikation
+    Serial.begin(115200);  // Start serial communication
 
-    initWatchdog(2);  // Initialisiert den Watchdog-Timer
+    initWatchdog(2);  // Initialize the watchdog timer
 
     sbusReceiver.begin();
     Wire.begin(21, 22);
     mpu.begin();
     mpu.setup();
     fbl.setup();
-    tailRotor.setup();  // Setup für den Heckrotor
+    tailRotor.setup();  // Setup for the tail rotor
 
-    // Attache den Servo (Motor) an den Pin
+    // Attach the main motor to its pin
     mainMotorServo.setup();
 
-    Serial.println("Setup abgeschlossen");
+    Serial.println("Setup complete");
 }
 
 void loop() {
     unsigned int channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse;
 
-    resetWatchdog();  // Setzt den Watchdog-Timer zurück
+    resetWatchdog();  // Reset the watchdog timer
 
-    // Liest die Werte der Kanäle 1, 2, 4, 6 und 8
+    // Read channel values for channels 1, 2, 4, 6, and 8
     if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse)) {
         
-        // Hole die aktuellen Sensordaten (einschließlich Yaw-Rate)
+        // Fetch the current sensor data (including yaw rate)
         sensors_event_t a, g, temp;
         mpu.getEvent(&a, &g, &temp);
-        float yawRate = g.gyro.z;  // Yaw-Rate vom Gyroskop
+        float yawRate = g.gyro.z;  // Yaw rate from the gyroscope
 
         if (Util::correctionEnabled(channel10Pulse)) {
-            // FBL-Update mit den gefilterten Werten durchführen
+            // Perform the FBL update using filtered values (with low-pass, high-pass, and moving average filters)
             fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
 
+            // Update the tail rotor with yaw correction
             tailRotor.update(channel8Pulse, channel4Pulse, yawRate);  
         } else {
-            // FBL und Filter deaktiviert – direkte Steuerdaten an die Servos weitergeben
+            // FBL and filters are disabled – send raw servo values
             fbl.servo1.writeMicroseconds(channel2Pulse);  // Back
             fbl.servo2.writeMicroseconds(channel6Pulse);  // Left
             fbl.servo3.writeMicroseconds(channel1Pulse);  // Right
 
+            // Update the tail rotor directly using channel values (without gyro influence)
             tailRotor.update(channel8Pulse, channel4Pulse, 0);  
         }
 
-        // Hauptmotor steuern
+        // Control the main motor
         mainMotorServo.setPulse(channel8Pulse);
     } else {
-        Serial.println("Fehler beim Lesen der Kanäle.");
+        Serial.println("Error reading channels.");
     }
 
     delay(10);
