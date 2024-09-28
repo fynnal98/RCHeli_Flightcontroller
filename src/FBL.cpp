@@ -15,6 +15,18 @@ void FBL::setup() {
     servo3.attach(servo3Pin); // Right
 }
 
+/**
+ * Die Funktion berechnet die Korrektur für die Swashplate unter Berücksichtigung von Offset, Tiefpassfilter und PID.
+ * 
+ * @param mpu Hier kann eine Beschreibung der Parameter stehen
+ * @param pidRoll
+ * @param pidPitch
+ * @param channel1Pulse
+ * @param channel2Pulse
+ * @param channel3Pulse
+ * 
+ * @result Aktualisiert die Position der Servos
+ */
 void FBL::update(MPU6050& mpu, PID& pidRoll, PID& pidPitch, unsigned long channel1Pulse, unsigned long channel2Pulse, unsigned long channel6Pulse) {
     // Sensordaten abrufen
     sensors_event_t a, g, temp;
