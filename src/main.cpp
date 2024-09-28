@@ -17,9 +17,16 @@ PID pidPitch(90.0, 0.1, 10);
 // Tiefpassfilter-Parameter
 float alpha = 0.15;  // Alpha-Wert für den Tiefpassfilter
 
+int pinServo1 = 13;
+int pinServo2 = 14;
+int pinServo3 = 15;
+
+float offsetGyroX = 0.0;
+float offsetGyroY = -0.09;
+float offsetGyroZ = 0.0;
 
 // Flightcontroller Setup
-FBL fbl(13, 14, 15, 0.0, -0.09, 0.0, alpha);  // Pins, Offsets und Alpha
+FBL fbl(pinServo1, pinServo2, pinServo3, offsetGyroX, offsetGyroY, offsetGyroZ, alpha);  // Pins, Offsets und Alpha
 
 const int mainMotorPin = 5;   // Pin für den ESC des Hauptmotors
 const int tailMotorPin = 17;  // Pin für den ESC des Heckmotors
