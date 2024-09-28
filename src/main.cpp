@@ -65,10 +65,6 @@ void loop() {
     if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse)) {
 
         if (Util::correctionEnabled(channel10Pulse)) {
-<<<<<<< HEAD
-=======
-
->>>>>>> 32116a365587fa6580dafafd1c486af1b80f4e00
             // FBL-Update mit den gefilterten Werten durchführen
             fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
 
