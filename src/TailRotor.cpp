@@ -1,15 +1,13 @@
 #include "TailRotor.h"
 
-// Konstruktor: Übergibt Pin und Skalierungsfaktor, initialisiert den PID-Regler für Yaw
-TailRotor::TailRotor(int motorPin, float scaleFactor)
-    : motorPin(motorPin), scaleFactor(scaleFactor), pidYaw(90.0, 0.1, 10) {}  // Initialisiere den PID-Regler mit Standardwerten
+// Konstruktor: Übergibt Pin, Skalierungsfaktor und den bereits erstellten PID-Regler
+TailRotor::TailRotor(int motorPin, float scaleFactor, PID& pidYaw)
+    : motorPin(motorPin), scaleFactor(scaleFactor), pidYaw(pidYaw) {}  // Verwendet den PID-Regler aus der Main
 
-// Setup: Initialisiert den Servo und verbindet ihn mit dem entsprechenden Pin
 void TailRotor::setup() {
     motorServo.attach(motorPin);  // Servo an den angegebenen Pin anhängen
 }
 
-// Update: Berechnet den PWM-Wert basierend auf den Kanalwerten und der Yaw-Rate
 void TailRotor::update(unsigned long channel8Pulse, unsigned long channel4Pulse, float yawRate) {
     // Berechnung der Yaw-Korrektur basierend auf Gyroskop-Daten
     float yawCorrection = pidYaw.compute(0, yawRate);  // Verwende 0 als Sollwert (kein Yaw), yawRate als Istwert
@@ -21,9 +19,7 @@ void TailRotor::update(unsigned long channel8Pulse, unsigned long channel4Pulse,
     motorServo.writeMicroseconds(adjustedTailMotorPulse);
 }
 
-// Hilfsfunktion: Berechnet den PWM-Wert für den Heckrotor
 unsigned long TailRotor::computeTailMotorPulse(unsigned long channel8Pulse, unsigned long channel4Pulse, float yawCorrection) {
-    // Berechne den PWM-Wert des Heckmotors basierend auf dem Skalierungsfaktor und der Yaw-Korrektur
     unsigned long adjustedTailMotorPulse = channel8Pulse * scaleFactor + yawCorrection;
 
     // Berechne die Anpassung für den Heckrotor basierend auf Channel 4 (manuelle Steuerung)

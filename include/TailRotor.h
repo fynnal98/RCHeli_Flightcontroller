@@ -6,17 +6,16 @@
 
 class TailRotor {
 public:
-    TailRotor(int motorPin, float scaleFactor);  // Konstruktor
-    void setup();  // Setup des Servos
-    void update(unsigned long channel8Pulse, unsigned long channel4Pulse, float yawRate);  // Aktualisiert den Heckrotor
+    TailRotor(int motorPin, float scaleFactor, PID& pidYaw);  // Übergibt den PID-Controller als Referenz
+    void setup();
+    void update(unsigned long channel8Pulse, unsigned long channel4Pulse, float yawRate);
 
 private:
-    int motorPin;           // Pin für den Heckmotor
-    float scaleFactor;      // Skalierungsfaktor für den Heckmotor
-    Servo motorServo;       // Servo für den Heckmotor
-    PID pidYaw;             // PID für den Heckrotor
-
-    unsigned long computeTailMotorPulse(unsigned long channel8Pulse, unsigned long channel4Pulse, float yawCorrection);  // Berechnet den PWM-Wert
+    int motorPin;
+    float scaleFactor;
+    Servo motorServo;
+    PID& pidYaw;  // Speichere den PID-Regler als Referenz
+    unsigned long computeTailMotorPulse(unsigned long channel8Pulse, unsigned long channel4Pulse, float yawCorrection);
 };
 
-#endif // TAILROTOR_H
+#endif  // TAILROTOR_H

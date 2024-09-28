@@ -2,7 +2,7 @@
 #include <ESP32Servo.h>
 #include "SBUSReceiver.h"
 #include "MPU6050.h"
-#include "MPU6050Calibration.h"  // Füge die asynchrone Kalibrierung hinzu
+#include "MPU6050Calibration.h"
 #include "PID.h"
 #include "FBL.h"
 #include "WDT.h"
@@ -10,64 +10,56 @@
 #include "Util.h"
 #include "TailRotor.h"
 
-// SBUS Pin und Empfänger
 const int sbusPin = 16;
 SBUSReceiver sbusReceiver(Serial2);
 
-// MPU und PID
 MPU6050 mpu;
-PID pidRoll(90.0, 0.1, 10);
-PID pidPitch(90.0, 0.1, 10);
-PID pidYaw(0.0, 0.0, 0);  
+PID pidRoll(90.0, 0.0, 10); 
+PID pidPitch(90.0, 0.0, 10);  
+PID pidYaw(90.0, 0.0, 10); 
 
-// Filterparameter
-float lowPassAlpha = 1;  // Low-pass filter alpha
-float highPassAlpha = 1.0;  // High-pass filter alpha
-int movingAvgWindowSize = 1;  // Moving average filter window size (N)
+float lowPassAlpha = 0.2;
+float highPassAlpha = 1.0;
+int movingAvgWindowSize = 5;
 
-// CG-Offsets für den MPU vom CG des Helikopters
-float cgOffsetX = 0.0;  // X-Offset (Seitliche Verschiebung)
-float cgOffsetY = 0;  // Y-Offset (Höhenunterschied)
-float cgOffsetZ = 0.0;  // Z-Offset (Vorwärts/Rückwärts Verschiebung)
+int pinServo1 = 13;
+int pinServo2 = 14;
+int pinServo3 = 15;
 
-// Gyroskop-Drift-Offsets
+float cgOffsetX = 0.0;
+float cgOffsetY = -0.09;
+float cgOffsetZ = 0.0;
+
 float gyroDriftOffsetX = 0.0;
 float gyroDriftOffsetY = 0.0;
 float gyroDriftOffsetZ = 0.0;
 
-// Kalibrierung abgeschlossen
 bool calibrationCompleted = false;
 
-// Flight controller setup ohne CG Offsets (die werden in MPU6050.cpp verarbeitet)
-FBL fbl(13, 14, 15, lowPassAlpha, highPassAlpha, movingAvgWindowSize);  // Includes moving average filter size
+FBL fbl(pinServo1, pinServo2, pinServo3, lowPassAlpha, highPassAlpha, movingAvgWindowSize);
 
-const int mainMotorPin = 5;   // Pin für den ESC des Hauptmotors
-const int tailMotorPin = 17;  // Pin für den ESC des Heckmotors
+const int mainMotorPin = 5;
+const int tailMotorPin = 17;
 
-MainMotor mainMotorServo(mainMotorPin);  // Hauptmotor-Servo-Objekt
-float scalingFactorTailRotor = 1;
-
-TailRotor tailRotor(tailMotorPin, scalingFactorTailRotor);
+MainMotor mainMotorServo(mainMotorPin);  
+TailRotor tailRotor(tailMotorPin, 1, pidYaw); 
 
 void setup() {
-    Serial.begin(115200);  // Start serial communication
+    Serial.begin(115200);
 
-    initWatchdog(2);  // Initialize the watchdog timer
+    initWatchdog(2);
 
-    // SBUS-Empfänger und MPU6050 initialisieren
     sbusReceiver.begin();
     Wire.begin(21, 22);
     mpu.begin();
     mpu.setup();
 
-    // Starte die Kalibrierung
     Serial.println("Starte Gyroskop-Kalibrierung...");
-    MPU6050Calibration::beginCalibration(1000);  // Kalibriere mit 1000 Samples
+    MPU6050Calibration::beginCalibration(1000);
 
-    // Setup für FBL, Hauptmotor und Heckrotor
     fbl.setup();
-    tailRotor.setup();  // Setup für den Heckrotor
-    mainMotorServo.setup();  // Hauptmotor an den Pin anhängen
+    tailRotor.setup();
+    mainMotorServo.setup();
 
     Serial.println("Setup abgeschlossen");
 }
@@ -75,50 +67,37 @@ void setup() {
 void loop() {
     unsigned int channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse;
 
-    resetWatchdog();  // Setze den Watchdog zurück
+    resetWatchdog();
 
-    // Führe die Kalibrierung schrittweise durch
     if (!calibrationCompleted) {
         calibrationCompleted = MPU6050Calibration::updateCalibration(mpu, gyroDriftOffsetX, gyroDriftOffsetY, gyroDriftOffsetZ);
         if (calibrationCompleted) {
             Serial.println("Gyroskop-Kalibrierung abgeschlossen");
         }
-        // Warte, bis die Kalibrierung abgeschlossen ist, bevor der Rest des Codes läuft
         return;
     }
 
-    // Hole die Kanalwerte für die Steuerung
     if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse)) {
-        
-        // Hole die aktuellen Sensordaten
         sensors_event_t a, g, temp;
         mpu.getEvent(&a, &g, &temp);
-
-        // Wende die Gyroskop-Driftkorrektur an
         mpu.applyGyroOffset(g, gyroDriftOffsetX, gyroDriftOffsetY, gyroDriftOffsetZ);
-        float yawRate = g.gyro.z;  // Yaw-Rate vom Gyroskop
+        float yawRate = g.gyro.z;
 
         if (Util::correctionEnabled(channel10Pulse)) {
-            // FBL-Update mit den gefilterten Werten (Low-Pass, High-Pass, Moving Average)
             fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
-
-            // Aktualisiere den Heckrotor mit Yaw-Korrektur
-            tailRotor.update(channel8Pulse, channel4Pulse, yawRate);  
+            tailRotor.update(channel8Pulse, channel4Pulse, yawRate);
         } else {
-            // FBL und Filter deaktiviert – Rohdaten an die Servos weitergeben
-            fbl.servo1.writeMicroseconds(channel2Pulse);  // Back
-            fbl.servo2.writeMicroseconds(channel6Pulse);  // Left
-            fbl.servo3.writeMicroseconds(channel1Pulse);  // Right
+            fbl.servo1.writeMicroseconds(channel2Pulse);
+            fbl.servo2.writeMicroseconds(channel6Pulse);
+            fbl.servo3.writeMicroseconds(channel1Pulse);
 
-            // Aktualisiere den Heckrotor direkt mit Kanalwerten (ohne Gyroskop-Einfluss)
-            tailRotor.update(channel8Pulse, channel4Pulse, 0);  
+            tailRotor.update(channel8Pulse, channel4Pulse, 0);
         }
 
-        // Steuere den Hauptmotor
         mainMotorServo.setPulse(channel8Pulse);
     } else {
         Serial.println("Fehler beim Lesen der Kanäle.");
     }
 
-    delay(10);
+    delay(20);
 }
