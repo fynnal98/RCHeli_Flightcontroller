@@ -15,6 +15,7 @@ SBUSReceiver sbusReceiver(Serial2);
 MPU6050 mpu;
 PID pidRoll(90.0, 0.1, 10);
 PID pidPitch(90.0, 0.1, 10);
+PID pidYaw(0.0, 0.0, 0);  
 
 // Tiefpassfilter-Parameter
 float alpha = 0.15;  // Alpha-Wert für den Tiefpassfilter
@@ -63,21 +64,24 @@ void loop() {
 
     // Liest die Werte der Kanäle 1, 2, 4, 6 und 8
     if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse)) {
+        
+        // Hole die aktuellen Sensordaten (einschließlich Yaw-Rate)
+        sensors_event_t a, g, temp;
+        mpu.getEvent(&a, &g, &temp);
+        float yawRate = g.gyro.z;  // Yaw-Rate vom Gyroskop
 
         if (Util::correctionEnabled(channel10Pulse)) {
             // FBL-Update mit den gefilterten Werten durchführen
             fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
 
-            // Heckrotor aktualisieren
-            tailRotor.update(channel8Pulse, channel4Pulse);
+            tailRotor.update(channel8Pulse, channel4Pulse, yawRate);  
         } else {
             // FBL und Filter deaktiviert – direkte Steuerdaten an die Servos weitergeben
             fbl.servo1.writeMicroseconds(channel2Pulse);  // Back
             fbl.servo2.writeMicroseconds(channel6Pulse);  // Left
             fbl.servo3.writeMicroseconds(channel1Pulse);  // Right
 
-            // Heckrotor direkt mit Kanal 8 und 4 steuern
-            tailRotor.update(channel8Pulse, channel4Pulse);
+            tailRotor.update(channel8Pulse, channel4Pulse, 0);  
         }
 
         // Hauptmotor steuern
