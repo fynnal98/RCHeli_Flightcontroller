@@ -1,5 +1,6 @@
 #include "Util.h"
 
 bool Util::correctionEnabled(unsigned int channel10Pulse) {
-    return channel10Pulse > 1500;
+    int toggleThreshold = 1500;
+    return channel10Pulse > toggleThreshold;
 }

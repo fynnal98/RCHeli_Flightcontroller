@@ -64,7 +64,7 @@ void loop() {
     // Liest die Werte der Kanäle 1, 2, 4, 6 und 8
     if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse)) {
 
-        if (Util::correctionEnabled(channel10Pulse)) 
+        if (Util::correctionEnabled(channel10Pulse)) {
 
             // FBL-Update mit den gefilterten Werten durchführen
             fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
