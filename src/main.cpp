@@ -6,6 +6,7 @@
 #include "FBL.h"
 #include "WDT.h"
 #include "MainMotor.h"
+#include "Util.h"
 #include "TailRotor.h"
 
 const int sbusPin = 16;
@@ -63,7 +64,7 @@ void loop() {
     // Liest die Werte der Kanäle 1, 2, 4, 6 und 8
     if (sbusReceiver.readChannels(channel1Pulse, channel2Pulse, channel4Pulse, channel6Pulse, channel8Pulse, channel10Pulse)) {
 
-        if (channel10Pulse > 1500) {
+        if (Util::correctionEnabled(channel10Pulse)) {
             // FBL-System und Filter aktiv
             sensors_event_t a, g, temp;
             mpu.getEvent(&a, &g, &temp);  // Daten vom MPU6050 auslesen
