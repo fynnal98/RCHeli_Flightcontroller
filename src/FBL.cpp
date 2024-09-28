@@ -4,8 +4,8 @@
 DataLogger dataLogger;
 
 // Constructor now includes moving average window size
-FBL::FBL(int pin1, int pin2, int pin3, float offsetX, float offsetY, float offsetZ, float lowPassAlpha, float highPassAlpha, int movingAvgWindowSize)
-    : servo1Pin(pin1), servo2Pin(pin2), servo3Pin(pin3), dx(offsetX), dy(offsetY), dz(offsetZ),
+FBL::FBL(int pin1, int pin2, int pin3, float lowPassAlpha, float highPassAlpha, int movingAvgWindowSize)
+    : servo1Pin(pin1), servo2Pin(pin2), servo3Pin(pin3),
       rollLowPassFilter(lowPassAlpha), pitchLowPassFilter(lowPassAlpha),
       rollHighPassFilter(highPassAlpha), pitchHighPassFilter(highPassAlpha),
       rollMovingAvgFilter(movingAvgWindowSize), pitchMovingAvgFilter(movingAvgWindowSize)  // Initialize moving average filters
@@ -22,9 +22,9 @@ void FBL::update(MPU6050& mpu, PID& pidRoll, PID& pidPitch, unsigned long channe
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
 
-    // Corrected accelerations considering offsets
-    float ax_corrected = a.acceleration.x - (g.gyro.y * dz - g.gyro.z * dy);
-    float ay_corrected = a.acceleration.y - (g.gyro.z * dx - g.gyro.x * dz);
+    // Corrected accelerations now handled inside MPU6050
+    float ax_corrected, ay_corrected;
+    mpu.calculateCorrectedAccelerations(&a, &g, ax_corrected, ay_corrected);
 
     // Apply low-pass filter
     float rollLowPassed = rollLowPassFilter.apply(ax_corrected);

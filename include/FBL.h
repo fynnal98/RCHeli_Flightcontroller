@@ -10,7 +10,7 @@
 
 class FBL {
 public:
-    FBL(int pin1, int pin2, int pin3, float offsetX, float offsetY, float offsetZ, float lowPassAlpha, float highPassAlpha, int movingAvgWindowSize);
+    FBL(int pin1, int pin2, int pin3, float lowPassAlpha, float highPassAlpha, int movingAvgWindowSize);
     void setup();
     void update(MPU6050& mpu, PID& pidRoll, PID& pidPitch, unsigned long channel1Pulse, unsigned long channel2Pulse, unsigned long channel6Pulse);
 
@@ -18,7 +18,6 @@ public:
 
 private:
     int servo1Pin, servo2Pin, servo3Pin;
-    float dx, dy, dz;  // Offsets for the sensor
 
     LowPassFilter rollLowPassFilter;
     LowPassFilter pitchLowPassFilter;

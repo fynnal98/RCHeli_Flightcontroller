@@ -4,7 +4,6 @@
 #include <Wire.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
-#include <Arduino.h>
 
 class MPU6050 {
 public:
@@ -12,9 +11,15 @@ public:
     void begin();
     void setup();
     void getEvent(sensors_event_t* a, sensors_event_t* g, sensors_event_t* temp);
+    void applyGyroOffset(sensors_event_t& g, float gyroXOffset, float gyroYOffset, float gyroZOffset);
+    void calculateCorrectedAccelerations(sensors_event_t* a, sensors_event_t* g, float& ax_corrected, float& ay_corrected);
+
+    // Deklariere die setCGOffsets Methode hier
+    void setCGOffsets(float offsetX, float offsetY, float offsetZ);
 
 private:
     Adafruit_MPU6050 mpu;
+    float cgOffsetX, cgOffsetY, cgOffsetZ;  // CG Offsets für die Berechnung
 };
 
 #endif // MPU6050_H

@@ -4,7 +4,7 @@
 #define MPU6050_ADDRESS 0x68  // Standard-I2C-Adresse des MPU6050
 #define MPU6050_SMPLRT_DIV 0x19  // Register für die Abtastrate
 
-MPU6050::MPU6050() : mpu() {}
+MPU6050::MPU6050() : mpu(), cgOffsetX(0.0), cgOffsetY(0.0), cgOffsetZ(0.0) {}
 
 void MPU6050::begin() {
     if (!mpu.begin()) {
@@ -38,4 +38,25 @@ void MPU6050::getEvent(sensors_event_t* a, sensors_event_t* g, sensors_event_t* 
     // Logge die ungefilterten Daten (nur 6 Parameter)
     dataLogger.logData(a->acceleration.x, a->acceleration.y, a->acceleration.z,
                        g->gyro.x, g->gyro.y, g->gyro.z);
+}
+
+// Methode zur Anwendung der Gyroskop-Offsets (Driftkorrektur)
+void MPU6050::applyGyroOffset(sensors_event_t& g, float gyroXOffset, float gyroYOffset, float gyroZOffset) {
+    g.gyro.x -= gyroXOffset;
+    g.gyro.y -= gyroYOffset;
+    g.gyro.z -= gyroZOffset;
+}
+
+// Berechnet die korrigierten Beschleunigungswerte unter Berücksichtigung der CG-Offsets
+void MPU6050::calculateCorrectedAccelerations(sensors_event_t* a, sensors_event_t* g, float& ax_corrected, float& ay_corrected) {
+    // Korrigierte Beschleunigungen berechnen unter Berücksichtigung der CG-Offsets
+    ax_corrected = a->acceleration.x - (g->gyro.y * cgOffsetZ - g->gyro.z * cgOffsetY);
+    ay_corrected = a->acceleration.y - (g->gyro.z * cgOffsetX - g->gyro.x * cgOffsetZ);
+}
+
+// Setzt die CG-Offsets für die spätere Berechnung
+void MPU6050::setCGOffsets(float offsetX, float offsetY, float offsetZ) {
+    this->cgOffsetX = offsetX;
+    this->cgOffsetY = offsetY;
+    this->cgOffsetZ = offsetZ;
 }
