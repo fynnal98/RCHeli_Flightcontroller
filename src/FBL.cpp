@@ -3,50 +3,32 @@
 
 DataLogger dataLogger;
 
-// Constructor now includes Kalman filter parameters
-FBL::FBL(int pin1, int pin2, int pin3, float lowPassAlpha, float highPassAlpha, int movingAvgWindowSize, float kalmanQ, float kalmanR, float kalmanEstimateError, float kalmanInitialEstimate)
+// Constructor initializes the servos and filter handlers
+FBL::FBL(int pin1, int pin2, int pin3, FilterHandler& rollFilterHandler, FilterHandler& pitchFilterHandler)
     : servo1Pin(pin1), servo2Pin(pin2), servo3Pin(pin3),
-      rollLowPassFilter(lowPassAlpha), pitchLowPassFilter(lowPassAlpha),
-      rollHighPassFilter(highPassAlpha), pitchHighPassFilter(highPassAlpha),
-      rollMovingAvgFilter(movingAvgWindowSize), pitchMovingAvgFilter(movingAvgWindowSize),
-      rollKalmanFilter(kalmanQ, kalmanR, kalmanEstimateError, kalmanInitialEstimate),  // Initialize Kalman filters
-      pitchKalmanFilter(kalmanQ, kalmanR, kalmanEstimateError, kalmanInitialEstimate)  // Initialize Kalman filters
+      rollFilterHandler(rollFilterHandler), pitchFilterHandler(pitchFilterHandler)
 {}
 
+// Set up servos
 void FBL::setup() {
     servo1.attach(servo1Pin); // Back
     servo2.attach(servo2Pin); // Left
     servo3.attach(servo3Pin); // Right
 }
 
-void FBL::update(MPU6050& mpu, PID& pidRoll, PID& pidPitch, unsigned long channel1Pulse, unsigned long channel2Pulse, unsigned long channel6Pulse) {
+// Update method fetches sensor data and applies filters
+void FBL::update(MPU6050& mpu, unsigned long channel1Pulse, unsigned long channel2Pulse, unsigned long channel6Pulse) {
     // Fetch sensor data
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
 
-    // Corrected accelerations now handled inside MPU6050
+    // Corrected accelerations are handled inside MPU6050
     float ax_corrected, ay_corrected;
     mpu.calculateCorrectedAccelerations(&a, &g, ax_corrected, ay_corrected);
 
-    // Apply low-pass filter
-    float rollLowPassed = rollLowPassFilter.apply(ax_corrected);
-    float pitchLowPassed = pitchLowPassFilter.apply(ay_corrected);
-
-    // Apply high-pass filter after low-pass filter
-    float rollHighPassed = rollHighPassFilter.apply(rollLowPassed);
-    float pitchHighPassed = pitchHighPassFilter.apply(pitchLowPassed);
-
-    // Apply moving average filter after high-pass filter
-    float rollMovingAvgFiltered = rollMovingAvgFilter.apply(rollHighPassed);
-    float pitchMovingAvgFiltered = pitchMovingAvgFilter.apply(pitchHighPassed);
-
-    // Apply Kalman filter after moving average filter
-    float rollKalmanFiltered = rollKalmanFilter.updateEstimate(rollMovingAvgFiltered);
-    float pitchKalmanFiltered = pitchKalmanFilter.updateEstimate(pitchMovingAvgFiltered);
-
-    // Compute PID corrections based on filtered values
-    float rollCorrection = pidRoll.compute(0, rollKalmanFiltered);
-    float pitchCorrection = pidPitch.compute(0, pitchKalmanFiltered);
+    // Apply the filter handlers
+    float rollCorrection = rollFilterHandler.apply(ax_corrected);
+    float pitchCorrection = pitchFilterHandler.apply(ay_corrected);
 
     // Add corrections to the channel data
     unsigned long servo1Pulse = channel2Pulse + pitchCorrection; // Back

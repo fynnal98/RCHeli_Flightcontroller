@@ -9,29 +9,33 @@
 #include "MainMotor.h"
 #include "Util.h"
 #include "TailRotor.h"
+#include "FilterHandler.h"
 
+// SBUS Pin und Empfänger
 const int sbusPin = 16;
 SBUSReceiver sbusReceiver(Serial2);
 
+// MPU und PID
 MPU6050 mpu;
-PID pidRoll(90.0, 0.0, 10); 
-PID pidPitch(90.0, 0.0, 10);  
-PID pidYaw(90.0, 0.0, 10); 
+PID pidRoll(90.0, 0.0, 10);
+PID pidPitch(90.0, 0.0, 10);
+PID pidYaw(90.0, 0.0, 10);
 
 // Filterparameter
 float lowPassAlpha = 0.9;
 float highPassAlpha = 0.95;
 int movingAvgWindowSize = 1.0;
 
-float kalmanQ = 0.001;  // Prozessrauschen für den Kalman-Filter // Startwert: 0.001 bis 0.01
-float kalmanR = 0.1;    // Messrauschen für den Kalman-Filter // Startwert: 0.1 bis 0.5
-float kalmanEstimateError = 1.0;  // Fehler in der anfänglichen Schätzung
-float kalmanInitialEstimate = 0.0;  // Anfangswert für die Schätzung
+float kalmanQ = 0.001;
+float kalmanR = 0.1;
+float kalmanEstimateError = 1.0;
+float kalmanInitialEstimate = 0.0;
 
 int pinServo1 = 13;
 int pinServo2 = 14;
 int pinServo3 = 15;
 
+// CG-Offsets für den MPU
 float cgOffsetX = -0.09;
 float cgOffsetY = 0.001;
 float cgOffsetZ = 0.0;
@@ -42,14 +46,19 @@ float gyroDriftOffsetZ = 0.0;
 
 bool calibrationCompleted = false;
 
-// FBL-Konstruktor mit allen Filterparametern
-FBL fbl(pinServo1, pinServo2, pinServo3, lowPassAlpha, highPassAlpha, movingAvgWindowSize, kalmanQ, kalmanR, kalmanEstimateError, kalmanInitialEstimate);
+// FilterHandler für Roll und Pitch erstellen
+FilterHandler rollFilterHandler(lowPassAlpha, highPassAlpha, movingAvgWindowSize, kalmanQ, kalmanR, kalmanEstimateError, kalmanInitialEstimate, pidRoll);
+FilterHandler pitchFilterHandler(lowPassAlpha, highPassAlpha, movingAvgWindowSize, kalmanQ, kalmanR, kalmanEstimateError, kalmanInitialEstimate, pidPitch);
 
+// FBL-Objekt
+FBL fbl(pinServo1, pinServo2, pinServo3, rollFilterHandler, pitchFilterHandler);
+
+// Motoren
 const int mainMotorPin = 5;
 const int tailMotorPin = 17;
 
-MainMotor mainMotorServo(mainMotorPin);  
-TailRotor tailRotor(tailMotorPin, 1, pidYaw); 
+MainMotor mainMotorServo(mainMotorPin);
+TailRotor tailRotor(tailMotorPin, 1, pidYaw);
 
 void setup() {
     Serial.begin(115200);
@@ -91,7 +100,7 @@ void loop() {
         float yawRate = g.gyro.z;
 
         if (Util::correctionEnabled(channel10Pulse)) {
-            fbl.update(mpu, pidRoll, pidPitch, channel1Pulse, channel2Pulse, channel6Pulse);
+            fbl.update(mpu, channel1Pulse, channel2Pulse, channel6Pulse);
             tailRotor.update(channel8Pulse, channel4Pulse, yawRate);
         } else {
             fbl.servo1.writeMicroseconds(channel2Pulse);
