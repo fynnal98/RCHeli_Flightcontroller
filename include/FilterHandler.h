@@ -9,20 +9,16 @@
 
 class FilterHandler {
 public:
-    // Constructor for initializing the filters and PID controller
     FilterHandler(float lowPassAlpha, float highPassAlpha, int movingAvgWindowSize, float kalmanQ, float kalmanR, float kalmanEstimateError, float kalmanInitialEstimate, PID& pid);
 
-    // Method to apply all filters and return the final PID output
-    float apply(float value);
+    // Apply all filters based on flags (true/false for each filter)
+    float apply(float value, bool useLowPass, bool useHighPass, bool useMovingAvg, bool useKalman);
 
 private:
-    // Filters
     LowPassFilter lowPassFilter;
     HighPassFilter highPassFilter;
     MovingAverageFilter movingAvgFilter;
     KalmanFilter kalmanFilter;
-
-    // PID controller
     PID& pid;
 };
 

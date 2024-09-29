@@ -31,6 +31,12 @@ float kalmanR = 0.1;
 float kalmanEstimateError = 1.0;
 float kalmanInitialEstimate = 0.0;
 
+// Flags, um Filter zu aktivieren oder deaktivieren
+bool useLowPass = true;
+bool useHighPass = true;
+bool useMovingAvg = true;
+bool useKalman = true;
+
 int pinServo1 = 13;
 int pinServo2 = 14;
 int pinServo3 = 15;
@@ -100,7 +106,8 @@ void loop() {
         float yawRate = g.gyro.z;
 
         if (Util::correctionEnabled(channel10Pulse)) {
-            fbl.update(mpu, channel1Pulse, channel2Pulse, channel6Pulse);
+            // Übergib die Filter-Flags und wende die Filter an
+            fbl.update(mpu, channel1Pulse, channel2Pulse, channel6Pulse, useLowPass, useHighPass, useMovingAvg, useKalman);
             tailRotor.update(channel8Pulse, channel4Pulse, yawRate);
         } else {
             fbl.servo1.writeMicroseconds(channel2Pulse);
