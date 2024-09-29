@@ -18,16 +18,22 @@ PID pidRoll(90.0, 0.0, 10);
 PID pidPitch(90.0, 0.0, 10);  
 PID pidYaw(90.0, 0.0, 10); 
 
-float lowPassAlpha = 0.2;
-float highPassAlpha = 1.0;
-int movingAvgWindowSize = 5;
+// Filterparameter
+float lowPassAlpha = 0.9;
+float highPassAlpha = 0.95;
+int movingAvgWindowSize = 1.0;
+
+float kalmanQ = 0.001;  // Prozessrauschen für den Kalman-Filter // Startwert: 0.001 bis 0.01
+float kalmanR = 0.1;    // Messrauschen für den Kalman-Filter // Startwert: 0.1 bis 0.5
+float kalmanEstimateError = 1.0;  // Fehler in der anfänglichen Schätzung
+float kalmanInitialEstimate = 0.0;  // Anfangswert für die Schätzung
 
 int pinServo1 = 13;
 int pinServo2 = 14;
 int pinServo3 = 15;
 
-float cgOffsetX = 0.0;
-float cgOffsetY = -0.09;
+float cgOffsetX = -0.09;
+float cgOffsetY = 0.001;
 float cgOffsetZ = 0.0;
 
 float gyroDriftOffsetX = 0.0;
@@ -36,7 +42,8 @@ float gyroDriftOffsetZ = 0.0;
 
 bool calibrationCompleted = false;
 
-FBL fbl(pinServo1, pinServo2, pinServo3, lowPassAlpha, highPassAlpha, movingAvgWindowSize);
+// FBL-Konstruktor mit allen Filterparametern
+FBL fbl(pinServo1, pinServo2, pinServo3, lowPassAlpha, highPassAlpha, movingAvgWindowSize, kalmanQ, kalmanR, kalmanEstimateError, kalmanInitialEstimate);
 
 const int mainMotorPin = 5;
 const int tailMotorPin = 17;

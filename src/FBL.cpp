@@ -3,12 +3,14 @@
 
 DataLogger dataLogger;
 
-// Constructor now includes moving average window size
-FBL::FBL(int pin1, int pin2, int pin3, float lowPassAlpha, float highPassAlpha, int movingAvgWindowSize)
+// Constructor now includes Kalman filter parameters
+FBL::FBL(int pin1, int pin2, int pin3, float lowPassAlpha, float highPassAlpha, int movingAvgWindowSize, float kalmanQ, float kalmanR, float kalmanEstimateError, float kalmanInitialEstimate)
     : servo1Pin(pin1), servo2Pin(pin2), servo3Pin(pin3),
       rollLowPassFilter(lowPassAlpha), pitchLowPassFilter(lowPassAlpha),
       rollHighPassFilter(highPassAlpha), pitchHighPassFilter(highPassAlpha),
-      rollMovingAvgFilter(movingAvgWindowSize), pitchMovingAvgFilter(movingAvgWindowSize)  // Initialize moving average filters
+      rollMovingAvgFilter(movingAvgWindowSize), pitchMovingAvgFilter(movingAvgWindowSize),
+      rollKalmanFilter(kalmanQ, kalmanR, kalmanEstimateError, kalmanInitialEstimate),  // Initialize Kalman filters
+      pitchKalmanFilter(kalmanQ, kalmanR, kalmanEstimateError, kalmanInitialEstimate)  // Initialize Kalman filters
 {}
 
 void FBL::setup() {
@@ -35,12 +37,16 @@ void FBL::update(MPU6050& mpu, PID& pidRoll, PID& pidPitch, unsigned long channe
     float pitchHighPassed = pitchHighPassFilter.apply(pitchLowPassed);
 
     // Apply moving average filter after high-pass filter
-    float rollFiltered = rollMovingAvgFilter.apply(rollHighPassed);
-    float pitchFiltered = pitchMovingAvgFilter.apply(pitchHighPassed);
+    float rollMovingAvgFiltered = rollMovingAvgFilter.apply(rollHighPassed);
+    float pitchMovingAvgFiltered = pitchMovingAvgFilter.apply(pitchHighPassed);
+
+    // Apply Kalman filter after moving average filter
+    float rollKalmanFiltered = rollKalmanFilter.updateEstimate(rollMovingAvgFiltered);
+    float pitchKalmanFiltered = pitchKalmanFilter.updateEstimate(pitchMovingAvgFiltered);
 
     // Compute PID corrections based on filtered values
-    float rollCorrection = pidRoll.compute(0, rollFiltered);
-    float pitchCorrection = pidPitch.compute(0, pitchFiltered);
+    float rollCorrection = pidRoll.compute(0, rollKalmanFiltered);
+    float pitchCorrection = pidPitch.compute(0, pitchKalmanFiltered);
 
     // Add corrections to the channel data
     unsigned long servo1Pulse = channel2Pulse + pitchCorrection; // Back
