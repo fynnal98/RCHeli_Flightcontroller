@@ -6,11 +6,7 @@
 class DataLogger {
 public:
     DataLogger();
-    // Methode für ungefilterte Daten (6 Parameter)
-    void logData(float ax, float ay, float az, float gx, float gy, float gz);
-    
-    // Methode für gefilterte Daten (8 Parameter)
-    void logData(float ax, float ay, float az, float gx, float gy, float gz, float rollFiltered, float pitchFiltered);
+    void logData(float ax, float ay, float rollFiltered = -1, float pitchFiltered = -1);  // Einheitliche Methode
 };
 
 #endif // DATALOGGER_H

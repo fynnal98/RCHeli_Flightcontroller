@@ -1,9 +1,10 @@
 #include "FBL.h"
 
 // Constructor
-FBL::FBL(int pin1, int pin2, int pin3, FilterHandler& rollFilterHandler, FilterHandler& pitchFilterHandler)
+FBL::FBL(int pin1, int pin2, int pin3, FilterHandler& rollFilterHandler, FilterHandler& pitchFilterHandler, DataLogger& logger)
     : servo1Pin(pin1), servo2Pin(pin2), servo3Pin(pin3),
-      rollFilterHandler(rollFilterHandler), pitchFilterHandler(pitchFilterHandler)
+      rollFilterHandler(rollFilterHandler), pitchFilterHandler(pitchFilterHandler),
+      logger(logger)  // Logger hinzufügen
 {}
 
 void FBL::setup() {
@@ -22,9 +23,9 @@ void FBL::update(MPU6050& mpu, unsigned long channel1Pulse, unsigned long channe
     float ax_corrected, ay_corrected;
     mpu.calculateCorrectedAccelerations(&a, &g, ax_corrected, ay_corrected);
 
-    // Apply filters through the FilterHandler
-    float rollCorrection = rollFilterHandler.apply(ax_corrected, useLowPass, useHighPass, useMovingAvg, useKalman);
-    float pitchCorrection = pitchFilterHandler.apply(ay_corrected, useLowPass, useHighPass, useMovingAvg, useKalman);
+    // Apply filters through the FilterHandler and pass the logger
+    float rollCorrection = rollFilterHandler.apply(ax_corrected, useLowPass, useHighPass, useMovingAvg, useKalman, logger);
+    float pitchCorrection = pitchFilterHandler.apply(ay_corrected, useLowPass, useHighPass, useMovingAvg, useKalman, logger);
 
     // Add corrections to the channel data
     unsigned long servo1Pulse = channel2Pulse + pitchCorrection; // Back

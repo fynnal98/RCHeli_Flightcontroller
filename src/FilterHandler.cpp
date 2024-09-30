@@ -1,33 +1,40 @@
 #include "FilterHandler.h"
+#include "DataLogger.h"
 
+// Konstruktor: Initialisiert alle Filter und den PID-Regler
 FilterHandler::FilterHandler(float lowPassAlpha, float highPassAlpha, int movingAvgWindowSize, float kalmanQ, float kalmanR, float kalmanEstimateError, float kalmanInitialEstimate, PID& pid)
     : lowPassFilter(lowPassAlpha), highPassFilter(highPassAlpha),
       movingAvgFilter(movingAvgWindowSize), kalmanFilter(kalmanQ, kalmanR, kalmanEstimateError, kalmanInitialEstimate),
       pid(pid) {}
 
-float FilterHandler::apply(float value, bool useLowPass, bool useHighPass, bool useMovingAvg, bool useKalman) {
-    float filteredValue = value;
+// Filter anwenden und das Ergebnis loggen
+float FilterHandler::apply(float value, bool useLowPass, bool useHighPass, bool useMovingAvg, bool useKalman, DataLogger& logger) {
+    float filteredValue = value;  // Starte mit dem Rohwert
+    float initialValue = value;   // Ungefilterter Wert
 
-    // Apply Low-pass filter if enabled
+    // Low-pass Filter anwenden, wenn aktiviert
     if (useLowPass) {
         filteredValue = lowPassFilter.apply(filteredValue);
     }
 
-    // Apply High-pass filter if enabled
+    // High-pass Filter anwenden, wenn aktiviert
     if (useHighPass) {
         filteredValue = highPassFilter.apply(filteredValue);
     }
 
-    // Apply Moving average filter if enabled
+    // Moving Average Filter anwenden, wenn aktiviert
     if (useMovingAvg) {
         filteredValue = movingAvgFilter.apply(filteredValue);
     }
 
-    // Apply Kalman filter if enabled
+    // Kalman Filter anwenden, wenn aktiviert
     if (useKalman) {
         filteredValue = kalmanFilter.updateEstimate(filteredValue);
     }
 
-    // Apply PID correction and return final result
+    // Logge jetzt sowohl Rohdaten als auch gefilterte Daten synchron nach allen Berechnungen
+    logger.logData(initialValue, initialValue, filteredValue, filteredValue);
+
+    // PID-Korrektur anwenden und das finale Ergebnis zurückgeben
     return pid.compute(0, filteredValue);
 }

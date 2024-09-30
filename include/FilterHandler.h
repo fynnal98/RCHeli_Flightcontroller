@@ -1,18 +1,17 @@
-#ifndef FILTERHANDLER_H
-#define FILTERHANDLER_H
+#ifndef FILTER_HANDLER_H
+#define FILTER_HANDLER_H
 
 #include "LowPassFilter.h"
 #include "HighPassFilter.h"
 #include "MovingAverageFilter.h"
 #include "KalmanFilter.h"
 #include "PID.h"
+#include "DataLogger.h"
 
 class FilterHandler {
 public:
     FilterHandler(float lowPassAlpha, float highPassAlpha, int movingAvgWindowSize, float kalmanQ, float kalmanR, float kalmanEstimateError, float kalmanInitialEstimate, PID& pid);
-
-    // Apply all filters based on flags (true/false for each filter)
-    float apply(float value, bool useLowPass, bool useHighPass, bool useMovingAvg, bool useKalman);
+    float apply(float value, bool useLowPass, bool useHighPass, bool useMovingAvg, bool useKalman, DataLogger& logger);
 
 private:
     LowPassFilter lowPassFilter;
@@ -22,4 +21,4 @@ private:
     PID& pid;
 };
 
-#endif // FILTERHANDLER_H
+#endif // FILTER_HANDLER_H
