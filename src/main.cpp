@@ -10,48 +10,11 @@
 #include "Util.h"
 #include "TailRotor.h"
 #include "FilterHandler.h"
-#include "DataLogger.h"  // Hinzufügen
+#include "DataLogger.h"
+#include "ParameterHandler.h"  // ParameterHandler einbinden
 
-// SBUS Pin und Empfänger
-const int sbusPin = 16;
-SBUSReceiver sbusReceiver(Serial2);
-
-// MPU und PID
+// MPU
 MPU6050 mpu;
-PID pidRoll(70.0, 0.0, 0);
-PID pidPitch(70.0, 0.0, 0);
-PID pidYaw(90.0, 0.0, 5);
-
-// Filterparameter
-float lowPassAlpha = 0.2;
-float highPassAlpha = 0.9;
-int movingAvgWindowSize = 10.0;
-
-float kalmanQ = 0.02;
-float kalmanR = 0.2;
-float kalmanEstimateError = 1.0;
-float kalmanInitialEstimate = 0.0;
-
-// Flags, um Filter zu aktivieren oder deaktivieren
-bool useLowPass = true;
-bool useHighPass = false;
-bool useMovingAvg = false;
-bool useKalman = false;
-
-int pinServo1 = 13;
-int pinServo2 = 14;
-int pinServo3 = 15;
-
-// CG-Offsets für den MPU
-float cgOffsetX = -0.09;
-float cgOffsetY = 0.0;
-float cgOffsetZ = 0.0;
-
-float gyroDriftOffsetX = 0.0;
-float gyroDriftOffsetY = 0.0;
-float gyroDriftOffsetZ = 0.0;
-
-bool calibrationCompleted = false;
 
 // Logger erstellen
 DataLogger logger;
@@ -64,19 +27,19 @@ FilterHandler pitchFilterHandler(lowPassAlpha, highPassAlpha, movingAvgWindowSiz
 FBL fbl(pinServo1, pinServo2, pinServo3, rollFilterHandler, pitchFilterHandler, logger);
 
 // Motoren
-const int mainMotorPin = 5;
-const int tailMotorPin = 17;
-
 MainMotor mainMotorServo(mainMotorPin);
-TailRotor tailRotor(tailMotorPin, 1, pidYaw);
+TailRotor tailRotor(tailMotorPin, tailRotorFactor, pidYaw);  // Tailrotor-Faktor
+SBUSReceiver sbusReceiver(Serial2);  // Initialisiere mit Serial2
 
 void setup() {
     Serial.begin(115200);
 
-    initWatchdog(2);
+    // Initialisiere Parameter
+    initializeParameters();
 
+    initWatchdog(2);
     sbusReceiver.begin();
-    Wire.begin(21, 22);
+    Wire.begin(wireSDA, wireSCL);  // Verwende die Pins für SDA und SCL aus dem ParameterHandler
     mpu.begin();
     mpu.setup();
 
