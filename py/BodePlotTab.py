@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel, QLineEdit, QHBoxLayout
+
 
 class BodePlotCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
@@ -11,10 +12,11 @@ class BodePlotCanvas(FigureCanvas):
         super(BodePlotCanvas, self).__init__(fig)
         self.setParent(parent)
 
-    def plot_bode(self, freq, magnitude_x, magnitude_y, phase_x, phase_y, title):
+    def plot_bode(self, freq, magnitude_x, magnitude_y, phase_x, phase_y, title, max_freq):
         self.ax1.clear()
         self.ax2.clear()
 
+        # Magnitude plot
         self.ax1.set_title(f'{title} - Magnitude')
         self.ax1.plot(freq, 20 * np.log10(magnitude_x), label='X-axis')
         self.ax1.plot(freq, 20 * np.log10(magnitude_y), label='Y-axis')
@@ -22,7 +24,9 @@ class BodePlotCanvas(FigureCanvas):
         self.ax1.set_xscale('log')
         self.ax1.grid(True)
         self.ax1.legend()
+        self.ax1.set_xlim([0.1, max_freq])  # Dynamische Anpassung der X-Achse
 
+        # Phase plot
         self.ax2.set_title(f'{title} - Phase')
         self.ax2.plot(freq, np.degrees(phase_x), label='X-axis')
         self.ax2.plot(freq, np.degrees(phase_y), label='Y-axis')
@@ -31,8 +35,10 @@ class BodePlotCanvas(FigureCanvas):
         self.ax2.set_xscale('log')
         self.ax2.grid(True)
         self.ax2.legend()
+        self.ax2.set_xlim([0.1, max_freq])  # Dynamische Anpassung der X-Achse
 
         self.draw()
+
 
 class BodePlotTab(QWidget):
     def __init__(self):
@@ -42,6 +48,7 @@ class BodePlotTab(QWidget):
         self.raw_y = None
         self.filtered_x = None
         self.filtered_y = None
+        self.sampling_rate = 320.0  # Standard-Abtastrate
 
         # UI Elements
         self.label = QLabel("Load a CSV file to generate Bode plots", self)
@@ -52,8 +59,24 @@ class BodePlotTab(QWidget):
         self.raw_canvas = BodePlotCanvas(self, width=5, height=4)
         self.filtered_canvas = BodePlotCanvas(self, width=5, height=4)
 
+        # Abtastrate Eingabe
+        self.sampling_rate_label = QLabel(f"Sampling Rate (Hz):", self)
+        self.sampling_rate_input = QLineEdit(str(self.sampling_rate), self)
+        self.sampling_rate_input.editingFinished.connect(self.update_sampling_rate)
+
+        # Nyquist-Frequenz Anzeige
+        self.nyquist_label = QLabel(f"Max Frequency (Nyquist): {self.sampling_rate / 2} Hz", self)
+
         # Layout setup
         layout = QVBoxLayout()
+
+        # Abtastrate und Nyquist-Frequenz Layout
+        sampling_layout = QHBoxLayout()
+        sampling_layout.addWidget(self.sampling_rate_label)
+        sampling_layout.addWidget(self.sampling_rate_input)
+        sampling_layout.addWidget(self.nyquist_label)
+
+        layout.addLayout(sampling_layout)
         layout.addWidget(self.label)
         layout.addWidget(self.load_button)
 
@@ -64,6 +87,18 @@ class BodePlotTab(QWidget):
         layout.addLayout(plot_layout)
         self.setLayout(layout)
 
+    def update_sampling_rate(self):
+        try:
+            # Abtastrate aktualisieren und Nyquist-Frequenz berechnen
+            self.sampling_rate = float(self.sampling_rate_input.text())
+            nyquist_freq = self.sampling_rate / 2
+            self.nyquist_label.setText(f"Max Frequency (Nyquist): {nyquist_freq:.2f} Hz")
+            # Bode-Diagramme neu plotten, wenn Daten vorhanden sind
+            if self.raw_x is not None and self.raw_y is not None:
+                self.process_data()
+        except ValueError:
+            self.label.setText("Invalid sampling rate entered")
+
     def load_csv(self):
         options = QFileDialog.Options()
         file_name, _ = QFileDialog.getOpenFileName(self, "Open CSV File", "", "CSV Files (*.csv)", options=options)
@@ -71,26 +106,39 @@ class BodePlotTab(QWidget):
             self.label.setText(f"Loaded: {file_name}")
             self.process_data(file_name)
 
-    def process_data(self, file_name):
-        df = pd.read_csv(file_name)
-        self.raw_x = df['ax'].values
-        self.raw_y = df['ay'].values
-        self.filtered_x = df['rollFiltered'].values
-        self.filtered_y = df['pitchFiltered'].values
+    def process_data(self, file_name=None):
+        if file_name:
+            df = pd.read_csv(file_name)
+            self.raw_x = df['ax'].values
+            self.raw_y = df['ay'].values
+            self.filtered_x = df['rollFiltered'].values
+            self.filtered_y = df['pitchFiltered'].values
 
-        freq = np.linspace(0.1, 10, len(self.raw_x))
+        # Anzahl der Datenpunkte
+        N = len(self.raw_x)
 
-        magnitude_x_raw = np.abs(np.fft.fft(self.raw_x))
-        phase_x_raw = np.angle(np.fft.fft(self.raw_x))
+        # Frequenzachse berechnen basierend auf der Abtastrate
+        freq = np.fft.fftfreq(N, d=1/self.sampling_rate)
 
-        magnitude_y_raw = np.abs(np.fft.fft(self.raw_y))
-        phase_y_raw = np.angle(np.fft.fft(self.raw_y))
+        # Nur die positive Frequenzhälfte behalten (da FFT symmetrisch ist)
+        freq = freq[:N // 2]
 
-        magnitude_x_filtered = np.abs(np.fft.fft(self.filtered_x))
-        phase_x_filtered = np.angle(np.fft.fft(self.filtered_x))
+        # FFT Berechnungen (nur die positive Hälfte)
+        magnitude_x_raw = np.abs(np.fft.fft(self.raw_x))[:N // 2]
+        phase_x_raw = np.angle(np.fft.fft(self.raw_x))[:N // 2]
 
-        magnitude_y_filtered = np.abs(np.fft.fft(self.filtered_y))
-        phase_y_filtered = np.angle(np.fft.fft(self.filtered_y))
+        magnitude_y_raw = np.abs(np.fft.fft(self.raw_y))[:N // 2]
+        phase_y_raw = np.angle(np.fft.fft(self.raw_y))[:N // 2]
 
-        self.raw_canvas.plot_bode(freq, magnitude_x_raw, magnitude_y_raw, phase_x_raw, phase_y_raw, "Raw Data (X, Y)")
-        self.filtered_canvas.plot_bode(freq, magnitude_x_filtered, magnitude_y_filtered, phase_x_filtered, phase_y_filtered, "Filtered Data (X, Y)")
+        magnitude_x_filtered = np.abs(np.fft.fft(self.filtered_x))[:N // 2]
+        phase_x_filtered = np.angle(np.fft.fft(self.filtered_x))[:N // 2]
+
+        magnitude_y_filtered = np.abs(np.fft.fft(self.filtered_y))[:N // 2]
+        phase_y_filtered = np.angle(np.fft.fft(self.filtered_y))[:N // 2]
+
+        # Max Frequenz (Nyquist) berechnen
+        max_freq = self.sampling_rate / 2
+
+        # Plot aktualisieren
+        self.raw_canvas.plot_bode(freq, magnitude_x_raw, magnitude_y_raw, phase_x_raw, phase_y_raw, "Raw Data (X, Y)", max_freq)
+        self.filtered_canvas.plot_bode(freq, magnitude_x_filtered, magnitude_y_filtered, phase_x_filtered, phase_y_filtered, "Filtered Data (X, Y)", max_freq)

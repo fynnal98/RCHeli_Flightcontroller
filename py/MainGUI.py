@@ -6,7 +6,7 @@ from LoggerTab import LoggerTab
 class MainGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("MPU6050 Data Logger & Bode Plotter")
+        self.setWindowTitle("HUBERT | Flightcontroller")
         self.setGeometry(200, 200, 1000, 600)
 
         # Tab widget
