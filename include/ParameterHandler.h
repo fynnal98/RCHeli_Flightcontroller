@@ -14,6 +14,11 @@ extern PID pidRoll;
 extern PID pidPitch;
 extern PID pidYaw;
 
+extern float rollPIDFactor;
+extern float pitchPIDFactor;
+extern float yawPIDFactor;
+extern float integralLimit;
+
 // Motor-Pins
 extern const int mainMotorPin;
 extern const int tailMotorPin;
@@ -50,6 +55,9 @@ extern float cgOffsetZ;
 extern float gyroDriftOffsetX;
 extern float gyroDriftOffsetY;
 extern float gyroDriftOffsetZ;
+
+// Kalibrierungsparameter
+extern const int calibrationDuration;
 
 // Kalibrierungsstatus
 extern bool calibrationCompleted;

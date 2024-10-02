@@ -11,7 +11,7 @@
 #include "TailRotor.h"
 #include "FilterHandler.h"
 #include "DataLogger.h"
-#include "ParameterHandler.h"  // ParameterHandler einbinden
+#include "ParameterHandler.h"
 
 // MPU
 MPU6050 mpu;
@@ -44,7 +44,7 @@ void setup() {
     mpu.setup();
 
     Serial.println("Starte Gyroskop-Kalibrierung...");
-    MPU6050Calibration::beginCalibration(1000);
+    MPU6050Calibration::beginCalibration(calibrationDuration);
 
     fbl.setup();
     tailRotor.setup();
