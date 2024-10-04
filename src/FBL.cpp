@@ -23,14 +23,14 @@ void FBL::update(MPU6050& mpu, unsigned long channel1Pulse, unsigned long channe
     float ax_corrected, ay_corrected;
     mpu.calculateCorrectedAccelerations(&a, &g, ax_corrected, ay_corrected);
 
-    // Apply filters through the FilterHandler and pass the logger
-    float rollCorrection = rollFilterHandler.apply(ax_corrected, useLowPass, useHighPass, useMovingAvg, useKalman, logger);
-    float pitchCorrection = pitchFilterHandler.apply(ay_corrected, useLowPass, useHighPass, useMovingAvg, useKalman, logger);
+    // Apply filters but swap x (roll) and y (pitch) in the correction logic with negation for 180-degree rotation
+    float pitchCorrection = rollFilterHandler.apply(-ax_corrected, useLowPass, useHighPass, useMovingAvg, useKalman, logger); // Treat ax as pitch, negate for 180 degrees
+    float rollCorrection = pitchFilterHandler.apply(-ay_corrected, useLowPass, useHighPass, useMovingAvg, useKalman, logger);  // Treat ay as roll, negate for 180 degrees
 
     // Add corrections to the channel data
     unsigned long servo1Pulse = channel2Pulse + pitchCorrection; // Back
-    unsigned long servo2Pulse = channel6Pulse + (-0.5 * pitchCorrection + 0.866 * rollCorrection); // Left
-    unsigned long servo3Pulse = channel1Pulse - (-0.5 * pitchCorrection - 0.866 * rollCorrection); // Right
+    unsigned long servo2Pulse = channel6Pulse + (-0.5 * pitchCorrection - 0.866 * rollCorrection); // Left
+    unsigned long servo3Pulse = channel1Pulse - (-0.5 * pitchCorrection + 0.866 * rollCorrection); // Right
 
     // Set the pulse lengths for the servos
     servo1.writeMicroseconds(servo1Pulse); // Back
